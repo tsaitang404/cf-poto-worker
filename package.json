@@ -1,0 +1,26 @@
+{
+  "name": "cf-poto-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers图床服务",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create poto-db",
+    "db:migrate": "wrangler d1 execute poto-db --file=./schema.sql",
+    "db:migrate:local": "wrangler d1 execute poto-db --local --file=./schema.sql"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "image",
+    "hosting",
+    "r2",
+    "d1"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.114.14"
+  }
+}

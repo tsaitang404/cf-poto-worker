@@ -1,0 +1,22 @@
+name = "poto"
+main = "src/index.js"
+compatibility_date = "2024-09-11"
+compatibility_flags = ["nodejs_compat"]
+
+# 环境变量
+[vars]
+UPLOAD_PASSWORD = "test123456"
+
+# R2 存储桶绑定
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "poto"
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "poto-db"
+database_id = "ccb4cf17-750f-4f95-92de-4b936bf78412"
+
+[build]
+command = ""

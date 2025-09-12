@@ -1,6 +1,6 @@
 import { handleUpload } from './handlers/upload.js';
 import { handleView } from './handlers/view.js';
-import { handleAuth, validateSession } from './handlers/auth.js';
+import { handleAuth, handleChangePassword, validateSession } from './handlers/auth.js';
 import { handleStatic } from './handlers/static-new.js';
 import { corsHeaders } from './utils/cors.js';
 
@@ -111,6 +111,14 @@ async function handleRequest(request, env, ctx, path) {
       return Response.json({ success: false, message: '请先登录' }, { status: 401 });
     }
     return handleUpload(request, env);
+  }
+  
+  // 处理修改密码 - 需要认证
+  if (path === '/change-password' && request.method === 'POST') {
+    if (!isAuthenticated) {
+      return Response.json({ success: false, message: '请先登录' }, { status: 401 });
+    }
+    return handleChangePassword(request, env);
   }
   
   return new Response('Not Found', { status: 404 });

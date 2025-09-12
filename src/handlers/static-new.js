@@ -377,13 +377,132 @@ export async function handleStatic(request, env, path) {
             margin-bottom: 20px;
             font-size: 14px;
         }
+        
+        /* 修改密码模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            width: auto;
+            padding: 0;
+        }
+        
+        .close:hover {
+            color: #333;
+            background: none;
+        }
+        
+        .modal-form .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .modal-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .modal-form input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .modal-form input[type="password"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <h1 style="margin: 0;">📸 Poto 图床</h1>
-            <a href="/logout" style="color: #dc3545; text-decoration: none; font-weight: bold;">🚪 退出登录</a>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="#" onclick="openChangePasswordModal()" style="color: #007bff; text-decoration: none; font-weight: bold;">🔑 修改密码</a>
+                <a href="/logout" style="color: #dc3545; text-decoration: none; font-weight: bold;">🚪 退出登录</a>
+            </div>
         </div>
         
         <div class="feature-tips">
@@ -425,6 +544,34 @@ export async function handleStatic(request, env, path) {
     
     <div class="paste-hint" id="pasteHint">
         检测到剪贴板中有图片，按 Ctrl+V 粘贴
+    </div>
+    
+    <!-- 修改密码模态框 -->
+    <div class="modal" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🔑 修改密码</h2>
+                <button class="close" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            <form class="modal-form" id="changePasswordForm">
+                <div class="form-group">
+                    <label>当前密码:</label>
+                    <input type="password" name="currentPassword" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>新密码:</label>
+                    <input type="password" name="newPassword" id="newPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码:</label>
+                    <input type="password" name="confirmPassword" id="confirmPassword" required minlength="6">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()">取消</button>
+                    <button type="submit" class="btn-primary">确认修改</button>
+                </div>
+            </form>
+        </div>
     </div>
     
     <script>
@@ -659,6 +806,64 @@ export async function handleStatic(request, env, path) {
             dropArea.querySelector('.drop-message').innerHTML = 
                 '点击选择文件或拖拽图片到这里<br><small>支持 JPG、PNG、GIF、WebP 格式，最大 10MB</small>';
         }
+
+        // 修改密码相关函数
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('show');
+            document.getElementById('currentPassword').focus();
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('show');
+            document.getElementById('changePasswordForm').reset();
+        }
+
+        // 点击模态框外部关闭
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('changePasswordModal');
+            if (event.target === modal) {
+                closeChangePasswordModal();
+            }
+        });
+
+        // 处理修改密码表单提交
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newPassword = formData.get('newPassword');
+            const confirmPassword = formData.get('confirmPassword');
+            
+            // 客户端验证
+            if (newPassword !== confirmPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('新密码至少需要6位字符');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/change-password', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('密码修改成功！请重新登录');
+                    // 清除会话并重定向到登录页面
+                    window.location.href = '/logout';
+                } else {
+                    alert('修改失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('修改失败: ' + error.message);
+            }
+        });
     </script>
 </body>
 </html>`;

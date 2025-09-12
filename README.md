@@ -41,7 +41,7 @@ wrangler login
 
 #### 创建 R2 存储桶
 \`\`\`bash
-wrangler r2 bucket create your-images-bucket
+wrangler r2 bucket create poto
 \`\`\`
 
 #### 创建 D1 数据库
@@ -60,7 +60,7 @@ UPLOAD_PASSWORD = "your_secure_password_here"
 
 [[r2_buckets]]
 binding = "IMAGES_BUCKET"
-bucket_name = "your-images-bucket"  # 替换为你的存储桶名称
+bucket_name = "poto"  # 替换为你的存储桶名称
 
 [[d1_databases]]
 binding = "DB"
@@ -116,7 +116,7 @@ npm run deploy
 \`\`\`toml
 [[r2_buckets]]
 binding = "IMAGES_BUCKET"
-bucket_name = "your-bucket-name"
+bucket_name = "poto"
 \`\`\`
 
 ### D1 数据库绑定

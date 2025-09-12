@@ -42,7 +42,7 @@ cp .dev.vars.example .dev.vars
 
 ### 创建 R2 存储桶
 ```bash
-wrangler r2 bucket create my-images-bucket
+wrangler r2 bucket create poto
 ```
 
 ### 创建 D1 数据库
@@ -63,7 +63,7 @@ UPLOAD_PASSWORD = "your_secure_password"  # 你的上传密码
 
 [[r2_buckets]]
 binding = "IMAGES_BUCKET"
-bucket_name = "my-images-bucket"  # 你创建的存储桶名称
+bucket_name = "poto"  # 你创建的存储桶名称
 
 [[d1_databases]]
 binding = "DB"

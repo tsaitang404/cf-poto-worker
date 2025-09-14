@@ -1,7 +1,8 @@
 import { handleUpload } from './handlers/upload.js';
 import { handleView } from './handlers/view.js';
+import { handleConvert } from './handlers/convert.js';
 import { handleAuth, handleChangePassword, validateSession } from './handlers/auth.js';
-import { handleStatic } from './handlers/static-new.js';
+import { handleStatic } from './handlers/static.js';
 import { corsHeaders } from './utils/cors.js';
 
 export default {
@@ -54,6 +55,16 @@ async function handleRequest(request, env, ctx, path) {
   if (path.startsWith('/image/')) {
     const imageId = path.split('/')[2];
     return handleView(request, env, imageId);
+  }
+  
+  // 格式转换下载（不需要认证）
+  if (path.startsWith('/convert/')) {
+    const parts = path.split('/');
+    if (parts.length >= 4) {
+      const imageId = parts[2];
+      const format = parts[3];
+      return handleConvert(request, env, imageId, format);
+    }
   }
   
   // API: 获取图片信息（不需要认证）

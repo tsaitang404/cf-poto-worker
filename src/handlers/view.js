@@ -132,6 +132,58 @@ export async function handleView(request, env, imageId) {
         .btn-secondary:hover {
             background: #545b62;
         }
+        
+        .download-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .download-title {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #218838;
+        }
+        
+        .download-btn:before {
+            content: "⬇";
+            margin-right: 5px;
+        }
+        
+        @media (max-width: 600px) {
+            .download-options {
+                flex-direction: column;
+            }
+            
+            .download-btn {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -165,6 +217,15 @@ export async function handleView(request, env, imageId) {
                     <span class="info-value" id="imageUrl">${image.url}</span>
                     <button class="url-copy" onclick="copyUrl()">复制</button>
                 </div>
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <div class="download-title">格式转换下载</div>
+            <div class="download-options">
+                <a href="/convert/${imageId}/webp" class="download-btn">WebP 格式</a>
+                <a href="/convert/${imageId}/jpeg" class="download-btn">JPEG 格式</a>
+                <a href="/convert/${imageId}/png" class="download-btn">PNG 格式</a>
             </div>
         </div>
         

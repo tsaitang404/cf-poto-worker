@@ -37,8 +37,8 @@ export async function handleUpload(request, env) {
     // 读取文件数据
     const imageBuffer = await imageFile.arrayBuffer();
     
-    // 暂时跳过WebP转换，直接使用原始数据
-    const webpBuffer = imageBuffer;
+    // 转换为WebP格式
+    const webpBuffer = await convertToWebP(imageBuffer, imageFile.type, 80);
     
     // 生成文件名
     const fileName = generateFileName(imageFile.name);
@@ -46,7 +46,7 @@ export async function handleUpload(request, env) {
     // 上传到R2
     await env.IMAGES_BUCKET.put(fileName, webpBuffer, {
       httpMetadata: {
-        contentType: imageFile.type,
+        contentType: 'image/webp',
       },
     });
 
@@ -69,7 +69,7 @@ export async function handleUpload(request, env) {
         fileName,
         imageFile.name,
         webpBuffer.byteLength,
-        imageFile.type,
+        'image/webp',
         publicUrl
       )
       .run();

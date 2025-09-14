@@ -22,5 +22,8 @@
   "license": "MIT",
   "devDependencies": {
     "wrangler": "^3.114.14"
+  },
+  "dependencies": {
+    "@saschazar/wasm-webp": "^3.0.1"
   }
 }

@@ -519,14 +519,14 @@ export async function handleStatic(request, env, path) {
             </div>
             
             <div class="form-group">
-                <label>选择图片:</label>
+                <label>选择图片（可多选）:</label>
                 <div class="file-drop-area" id="dropArea">
                     <div class="drop-icon">📁</div>
                     <div class="drop-message">
-                        点击选择文件或拖拽图片到这里<br>
-                        <small>支持 JPG、PNG、GIF、WebP 格式，最大 10MB</small>
+                        点击选择文件或拖拽图片到这里（可一次选择多张）<br>
+                        <small>支持 JPG、PNG、GIF、WebP 格式，单文件最大 10MB</small>
                     </div>
-                    <input type="file" name="image" id="fileInput" accept="image/*" required>
+                    <input type="file" name="image" id="fileInput" accept="image/*" multiple required>
                 </div>
                 <div class="file-info" id="fileInfo"></div>
             </div>
@@ -617,29 +617,32 @@ export async function handleStatic(request, env, path) {
 
         function handleDrop(e) {
             const dt = e.dataTransfer;
-            const files = dt.files;
+            const files = Array.from((dt && dt.files) || []);
             if (files.length > 0) {
-                handleFile(files[0]);
+                handleFiles(files);
             }
         }
 
         // 文件选择处理
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
-                handleFile(e.target.files[0]);
+                handleFiles(Array.from(e.target.files));
             }
         });
 
         // 粘贴图片处理
         document.addEventListener('paste', (e) => {
             const items = e.clipboardData.items;
+            const images = [];
             for (let item of items) {
                 if (item.type.indexOf('image') !== -1) {
-                    e.preventDefault();
                     const file = item.getAsFile();
-                    handleFile(file, true);
-                    break;
+                    if (file) images.push(file);
                 }
+            }
+            if (images.length) {
+                e.preventDefault();
+                handleFiles(images, true);
             }
         });
 
@@ -653,63 +656,67 @@ export async function handleStatic(request, env, path) {
             }
         });
 
-        function handleFile(file, isPaste = false) {
-            // 验证文件类型
-            if (!file.type.startsWith('image/')) {
-                showMessage('请选择图片文件', 'error');
-                return;
+        let selectedFiles = [];
+
+        function handleFiles(files, isPaste = false) {
+            // 合并并去重（基于 name+size）
+            const map = new Map(selectedFiles.map(f => [f.name + ':' + f.size, f]));
+            for (const f of files) {
+                if (!f.type.startsWith('image/')) {
+                    showMessage('请选择图片文件', 'error');
+                    continue;
+                }
+                if (f.size > 10 * 1024 * 1024) {
+                    showMessage('文件大小不能超过 10MB', 'error');
+                    continue;
+                }
+                map.set(f.name + ':' + f.size, f);
             }
 
-            // 验证文件大小 (10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                showMessage('文件大小不能超过 10MB', 'error');
-                return;
-            }
+            selectedFiles = Array.from(map.values());
 
-            // 更新文件输入
+            // 更新文件输入（构造 FileList）
             const dt = new DataTransfer();
-            dt.items.add(file);
+            selectedFiles.forEach(f => dt.items.add(f));
             fileInput.files = dt.files;
 
-            // 显示文件信息
-            showFileInfo(file, isPaste);
+            // 显示文件信息与预览
+            showFilesInfo(selectedFiles, isPaste);
+            renderPreviews(selectedFiles);
 
-            // 自动填充标题
-            if (!titleInput.value) {
-                const fileName = file.name || 'pasted-image';
+            // 自动填充标题（仅单个文件时）
+            if (selectedFiles.length === 1 && !titleInput.value) {
+                const fileName = selectedFiles[0].name || 'pasted-image';
                 const nameWithoutExt = fileName.replace(/\\.[^/.]+$/, '');
                 titleInput.value = nameWithoutExt;
             }
 
-            // 预览图片
-            previewImage(file);
-            
             // 更新拖拽区域样式
             dropArea.classList.add('has-file');
             dropArea.querySelector('.drop-message').innerHTML = 
-                '✅ 已选择文件<br><small>可以重新拖拽或点击更换</small>';
+                \`✅ 已选择 \${selectedFiles.length} 个文件<br><small>可以重新拖拽或点击更换</small>\`;
         }
 
-        function showFileInfo(file, isPaste) {
-            const size = formatFileSize(file.size);
+        function showFilesInfo(files, isPaste) {
             const source = isPaste ? '📋 从剪贴板粘贴' : '📁 从本地选择';
+            const lines = files.map(f => \`\${f.name} · \${formatFileSize(f.size)} · \${f.type}\`);
             fileInfo.innerHTML = \`
                 <strong>\${source}</strong><br>
-                文件名: \${file.name || 'pasted-image.' + getExtensionFromMime(file.type)}<br>
-                大小: \${size}<br>
-                类型: \${file.type}
+                共 \${files.length} 个文件<br>
+                \${lines.join('<br>')}
             \`;
             fileInfo.classList.add('show');
         }
 
-        function previewImage(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewContainer.innerHTML = \`
-                    <img src="\${e.target.result}" alt="预览" class="preview-image">
-                \`;
-            };
-            reader.readAsDataURL(file);
+        function renderPreviews(files) {
+            if (!files.length) { previewContainer.innerHTML = ''; return; }
+            const slice = files.slice(0, 6);
+            const readers = slice.map(f => new Promise(res => {
+                const r = new FileReader();
+                r.onload = e => res(\`<img src="\${e.target.result}" alt="预览" class="preview-image" style="max-height:180px;margin:6px;">\`);
+                r.readAsDataURL(f);
+            }));
+            Promise.all(readers).then(imgs => { previewContainer.innerHTML = imgs.join(''); });
         }
 
         function formatFileSize(bytes) {
@@ -750,12 +757,16 @@ export async function handleStatic(request, env, path) {
                 const result = await response.json();
                 
                 if (result.success) {
-                    showMessage(\`
-                        ✅ 上传成功！<br>
-                        <strong>图片链接:</strong> <a href="\${result.url}" target="_blank">\${result.url}</a><br>
-                        <strong>查看页面:</strong> <a href="\${result.viewUrl}" target="_blank">点击查看</a>
-                    \`, 'success');
-                    resetForm();
+                    // 成功后跳转：单个 -> /image/:id，多张 -> /images?ids=...
+                    if (Array.isArray(result.items)) {
+                        const ids = result.items.map(it => it.id).join(',');
+                        window.location.href = \`/images?ids=\${ids}\`;
+                    } else if (result.id) {
+                        window.location.href = result.viewUrl || \`/image/\${result.id}\`;
+                    } else {
+                        showMessage('✅ 上传成功，但未返回可跳转链接', 'success');
+                        resetForm();
+                    }
                 } else {
                     showMessage('❌ 上传失败: ' + (result.message || '未知错误'), 'error');
                 }
@@ -800,11 +811,12 @@ export async function handleStatic(request, env, path) {
 
         function resetForm() {
             form.reset();
+            selectedFiles = [];
             previewContainer.innerHTML = '';
             fileInfo.classList.remove('show');
             dropArea.classList.remove('has-file');
             dropArea.querySelector('.drop-message').innerHTML = 
-                '点击选择文件或拖拽图片到这里<br><small>支持 JPG、PNG、GIF、WebP 格式，最大 10MB</small>';
+                '点击选择文件或拖拽图片到这里（可一次选择多张）<br><small>支持 JPG、PNG、GIF、WebP 格式，单文件最大 10MB</small>';
         }
 
         // 修改密码相关函数

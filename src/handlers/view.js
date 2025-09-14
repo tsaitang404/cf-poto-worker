@@ -280,3 +280,83 @@ function formatFileSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
+export async function handleBatchView(request, env) {
+    try {
+        const url = new URL(request.url);
+        const idsParam = url.searchParams.get('ids');
+        if (!idsParam) {
+            return new Response('Missing ids parameter', { status: 400 });
+        }
+        const ids = idsParam
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s && /^\d+$/.test(s));
+        if (ids.length === 0) {
+            return new Response('No valid ids provided', { status: 400 });
+        }
+
+        // 查询多条记录
+        const placeholders = ids.map(() => '?').join(',');
+        const stmt = env.DB.prepare(`SELECT * FROM images WHERE id IN (${placeholders}) ORDER BY uploaded_at DESC`);
+        const result = await stmt.bind(...ids).all();
+        const images = result?.results || [];
+
+        const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量查看 - Poto 图床</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f6f7fb; margin: 0; }
+        .topbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 20px; text-align: center; }
+        .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; }
+        .thumb { aspect-ratio: 4/3; object-fit: cover; width: 100%; background:#eee; }
+        .meta { padding: 12px 14px; font-size: 14px; color: #555; }
+        .row { display:flex; justify-content: space-between; align-items:center; margin-top:6px; }
+        .btns { display:flex; gap:8px; margin-top:10px; }
+        .btn { text-decoration:none; padding:8px 10px; border-radius:8px; font-weight:600; font-size:13px; }
+        .btn-view { background:#007bff; color:#fff; }
+        .btn-open { background:#6c757d; color:#fff; }
+    </style>
+    <script>
+        function copy(text){ navigator.clipboard.writeText(text).then(()=>alert('已复制链接')); }
+        function humanSize(b){ if(b===0) return '0B'; const k=1024; const s=['B','KB','MB','GB']; const i=Math.floor(Math.log(b)/Math.log(k)); return (b/Math.pow(k,i)).toFixed(2)+' '+s[i]; }
+    </script>
+</head>
+<body>
+    <div class="topbar"><h2>🖼️ 批量查看（${images.length}）</h2></div>
+    <div class="container">
+        <div class="grid">
+            ${images.map(img => `
+                <div class="card">
+                    <img class="thumb" src="${img.url}" alt="${img.title}">
+                    <div class="meta">
+                        <div><strong>${img.title}</strong></div>
+                        <div class="row"><span>${img.filename}</span></div>
+                        <div class="row"><span>${img.original_name}</span><span>${img.file_size? '' : ''}</span></div>
+                        <div class="btns">
+                            <a class="btn btn-view" href="/image/${img.id}">详情</a>
+                            <a class="btn btn-open" href="${img.url}" target="_blank">打开原图</a>
+                            <a class="btn" href="javascript:void(0)" onclick="copy('${img.url}')">复制直链</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        <div style="text-align:center; margin:20px 0;">
+            <a href="/upload" class="btn btn-view" style="text-decoration:none;">继续上传</a>
+        </div>
+    </div>
+</body>
+</html>`;
+
+        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    } catch (e) {
+        console.error('Batch view error:', e);
+        return new Response('Error loading images', { status: 500 });
+    }
+}

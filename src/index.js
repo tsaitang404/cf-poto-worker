@@ -1,5 +1,5 @@
 import { handleUpload } from './handlers/upload.js';
-import { handleView } from './handlers/view.js';
+import { handleView, handleBatchView } from './handlers/view.js';
 import { handleConvert } from './handlers/convert.js';
 import { handleAuth, handleChangePassword, validateSession } from './handlers/auth.js';
 import { handleStatic } from './handlers/static.js';
@@ -55,6 +55,10 @@ async function handleRequest(request, env, ctx, path) {
   if (path.startsWith('/image/')) {
     const imageId = path.split('/')[2];
     return handleView(request, env, imageId);
+  }
+  // 批量查看（不需要认证） /images?ids=1,2,3
+  if (path === '/images' && request.method === 'GET') {
+    return handleBatchView(request, env);
   }
   
   // 格式转换下载（不需要认证）
